@@ -187,5 +187,59 @@ appbuilder.add_view(UserModelView,
                     icon="fa-user", 
                     category="Portfolio")
 
+from flask import render_template
+from flask_appbuilder import BaseView, expose
+from . import appbuilder, db
+from .stock import Stock, AppleStock
+
+class StockGraphView(BaseView):
+    default_view = "stock_graph"
+
+    @expose("/stock_graph/")
+    def stock_graph(self):
+        stock = db.session.query(Stock).filter_by(symbol="^GSPC").first()
+        if stock is None:
+            stock = Stock(symbol="^GSPC", name="S&P 500")
+            db.session.add(stock)
+            db.session.commit()
+
+        stock_data = stock.get_stock_data()
+        return self.render_template(
+            "sap_graph.html", stock_data=stock_data, base_template="appbuilder/base.html"
+        )
+
+class AppleStockGraphView(BaseView):
+    default_view = "apple_stock_graph"
+
+    @expose("/apple_stock_graph/")
+    def apple_stock_graph(self):
+        apple_stock = db.session.query(AppleStock).filter_by(symbol="AAPL").first()
+        if apple_stock is None:
+            default_user_id = 1  
+            apple_stock = AppleStock(symbol="AAPL", name="Apple Inc.", user_id=default_user_id)
+            db.session.add(apple_stock)
+            db.session.commit()
+
+        stock_data = apple_stock.get_stock_data()
+        return self.render_template(
+            "apple_graph.html", stock_data=stock_data, base_template="appbuilder/base.html"
+        )
+
+appbuilder.add_view(
+    StockGraphView,
+    "S&P 500 Graph",
+    icon="fa-line-chart",
+    category="Stocks",
+    category_icon="fa-money",
+)
+
+appbuilder.add_view(
+    AppleStockGraphView,
+    "Apple Stock Graph",
+    icon="fa-line-chart",
+    category="Stocks",
+    category_icon="fa-money",
+)
+
 db.create_all()
 
