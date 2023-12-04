@@ -150,6 +150,18 @@ appbuilder.add_view(
     category_icon="fa-group",
 )
 
+from .portfolio import Stock, MyUser
+
+class StockModelView(ModelView):
+    datamodel = SQLAInterface(Stock)
+    list_columns = ['symbol', 'name', 'quantity', 'purchase_price', 'user.username']
+
+class UserModelView(ModelView):
+    datamodel = SQLAInterface(MyUser)
+    related_views = [StockModelView]
+
+appbuilder.add_view(StockModelView, "List Stocks", icon="fa-table", category="Portfolio")
+appbuilder.add_view(UserModelView, "List Users", icon="fa-user", category="Portfolio")
 
 db.create_all()
 
