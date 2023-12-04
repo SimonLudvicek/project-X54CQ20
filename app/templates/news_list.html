@@ -1,0 +1,22 @@
+{%- extends 'appbuilder/base.html' %}
+{%- block content %}
+  <h3>News List</h3>
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Date</th>
+        <th>Text</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for news in news_list %}
+        <tr>
+          <td>{{ news.title }}</td>
+          <td>{{ news.date }}</td>
+          <td>{{ news.text }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{%- endblock %}

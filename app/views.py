@@ -123,16 +123,24 @@ appbuilder.add_view(
     category="Statistics"
 )
 
-from flask import flash, render_template
-from flask_appbuilder import SimpleFormView
-from flask_babel import lazy_gettext as _
-
+from flask_appbuilder import BaseView, SimpleFormView, expose
+from flask_appbuilder.models.sqla.interface import SQLAInterface
+from flask import render_template, flash
 from . import appbuilder, db
-from .news import News
+from .news import NewsModel, NewsForm
 
+class NewsListView(BaseView):
+    default_view = "list_news"
 
+    @expose("/list/")
+    def list_news(self):
+        news_list = db.session.query(NewsModel).all()
+        return self.render_template(
+            "news_list.html", news_list=news_list, base_template="appbuilder/base.html"
+        )
+    
 class NewsView(SimpleFormView):
-    form = News
+    form = NewsForm
     form_title = "Enter some exciting news"
     message = "Your news were submitted"
 
@@ -140,12 +148,20 @@ class NewsView(SimpleFormView):
         # post process form
         flash(self.message, "info")
 
+appbuilder.add_view(
+    NewsListView,
+    "List News",
+    icon="fa-cogs",
+    label="News List",
+    category="News",
+    category_icon="fa-group",
+)
 
 appbuilder.add_view(
     NewsView,
     "News View",
     icon="fa-cogs",
-    label=_("Add News"),
+    label=("Add News"),
     category="News",
     category_icon="fa-group",
 )
@@ -160,8 +176,16 @@ class UserModelView(ModelView):
     datamodel = SQLAInterface(MyUser)
     related_views = [StockModelView]
 
-appbuilder.add_view(StockModelView, "List Stocks", icon="fa-table", category="Portfolio")
-appbuilder.add_view(UserModelView, "List Users", icon="fa-user", category="Portfolio")
+appbuilder.add_view(StockModelView, 
+                    "List Stocks", 
+                    icon="fa-table", 
+                    category="Portfolio",
+                    category_icon="fa-folder-open-o")
+
+appbuilder.add_view(UserModelView, 
+                    "List Users", 
+                    icon="fa-user", 
+                    category="Portfolio")
 
 db.create_all()
 
