@@ -13,7 +13,7 @@ class Stock(Model):
     purchase_price = Column(Float, default=0.0)  
     user_id = Column(Integer, nullable=False)  
     
-    exchange_rate = 0.85  
+    exchange_rate = 0.93 
 
     def get_stock_data(self):
         if self.quantity is None:
@@ -38,7 +38,7 @@ class AppleStock(Model):
     purchase_price = Column(Float, default=0.0)
     user_id = Column(Integer, nullable=False)
 
-    exchange_rate = 0.85  
+    exchange_rate = 0.93  
 
     def get_stock_data(self):
         if self.quantity is None:
@@ -51,6 +51,33 @@ class AppleStock(Model):
         data = yf.download(self.symbol, start="2022-01-01", end="2023-01-01")
         data.reset_index(inplace=True)
 
+        data['Close_EUR'] = data['Close'] * self.exchange_rate
+
+        return data.to_dict(orient='records')
+    
+class TeslaStock(Model):
+    id = Column(Integer, primary_key=True)
+    symbol = Column(String(50), unique=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    quantity = Column(Integer, default=0)
+    purchase_price = Column(Float, default=0.0)
+    user_id = Column(Integer, nullable=False)
+
+    exchange_rate = 0.93
+
+    def get_stock_data(self):
+        if self.quantity is None:
+            self.quantity = 0
+        if self.purchase_price is None:
+            self.purchase_price = 0.0
+        if self.user_id is None:
+            
+            self.user_id = 1
+
+        data = yf.download(self.symbol, start="2022-01-01", end="2023-01-01")
+        data.reset_index(inplace=True)
+
+        
         data['Close_EUR'] = data['Close'] * self.exchange_rate
 
         return data.to_dict(orient='records')

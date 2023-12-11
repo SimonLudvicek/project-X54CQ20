@@ -8,8 +8,13 @@ from flask_appbuilder.models.group import aggregate_avg, aggregate_sum
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_appbuilder.views import ModelView
 
-from . import appbuilder
+from . import appbuilder, db
+from flask_appbuilder import BaseView, SimpleFormView, expose
 from .models import Country, CountryStats, PoliticalType, Portfolio
+from flask import render_template, flash
+from .news import NewsModel, NewsForm
+from .stock import Stock, AppleStock, TeslaStock
+from .portfolio import StockModel, MyUser
 
 log = logging.getLogger(__name__)
 
@@ -123,11 +128,7 @@ appbuilder.add_view(
     category="Statistics"
 )
 
-from flask_appbuilder import BaseView, SimpleFormView, expose
-from flask_appbuilder.models.sqla.interface import SQLAInterface
-from flask import render_template, flash
-from . import appbuilder, db
-from .news import NewsModel, NewsForm
+
 
 class NewsListView(BaseView):
     default_view = "list_news"
@@ -166,10 +167,10 @@ appbuilder.add_view(
     category_icon="fa-group",
 )
 
-from .portfolio import Stock, MyUser
+
 
 class StockModelView(ModelView):
-    datamodel = SQLAInterface(Stock)
+    datamodel = SQLAInterface(StockModel)
     list_columns = ['symbol', 'name', 'quantity', 'purchase_price', 'user.username']
 
 class UserModelView(ModelView):
@@ -187,10 +188,7 @@ appbuilder.add_view(UserModelView,
                     icon="fa-user", 
                     category="Portfolio")
 
-from flask import render_template
-from flask_appbuilder import BaseView, expose
-from . import appbuilder, db
-from .stock import Stock, AppleStock
+
 
 class StockGraphView(BaseView):
     default_view = "stock_graph"
@@ -225,6 +223,25 @@ class AppleStockGraphView(BaseView):
             "apple_graph.html", stock_data=stock_data, base_template="appbuilder/base.html"
         )
 
+class TeslaStockGraphView(BaseView):
+    default_view = "tesla_stock_graph"
+
+    @expose("/tesla_stock_graph/")
+    def tesla_stock_graph(self):
+        # Získáme nebo vytvoříme záznam pro akcie Tesly
+        tesla_stock = db.session.query(TeslaStock).filter_by(symbol="TSLA").first()
+        if tesla_stock is None:
+            # Při vytváření nového záznamu zajistíme, že user_id dostane platnou hodnotu
+            default_user_id = 1  # Nahraďte skutečným ID uživatele
+            tesla_stock = TeslaStock(symbol="TSLA", name="Tesla Inc.", user_id=default_user_id)
+            db.session.add(tesla_stock)
+            db.session.commit()
+
+        stock_data = tesla_stock.get_stock_data()
+        return self.render_template(
+            "tesla_graph.html", stock_data=stock_data, base_template="appbuilder/base.html"
+        )
+
 appbuilder.add_view(
     StockGraphView,
     "S&P 500 Graph",
@@ -236,6 +253,14 @@ appbuilder.add_view(
 appbuilder.add_view(
     AppleStockGraphView,
     "Apple Stock Graph",
+    icon="fa-line-chart",
+    category="Stocks",
+    category_icon="fa-money",
+)
+
+appbuilder.add_view(
+    TeslaStockGraphView,
+    "Tesla Stock Graph",
     icon="fa-line-chart",
     category="Stocks",
     category_icon="fa-money",
