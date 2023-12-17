@@ -13,7 +13,7 @@ from flask_appbuilder import BaseView, SimpleFormView, expose
 from .models import Country, CountryStats, PoliticalType, Portfolio
 from flask import render_template, flash
 from .news import NewsModel, NewsForm
-from .stock import Stock, AppleStock, TeslaStock
+from .stock import Stock, AppleStock, TeslaStock, MicrosoftStock, AmazonStock
 from .portfolio import StockModel, MyUser
 
 log = logging.getLogger(__name__)
@@ -242,6 +242,45 @@ class TeslaStockGraphView(BaseView):
             "tesla_graph.html", stock_data=stock_data, base_template="appbuilder/base.html"
         )
 
+class MicrosoftStockGraphView(BaseView):
+    default_view = "microsoft_stock_graph"
+
+    @expose("/microsoft_stock_graph/")
+    def microsoft_stock_graph(self):
+        # Získáme nebo vytvoříme záznam pro akcie Microsoftu
+        microsoft_stock = db.session.query(MicrosoftStock).filter_by(symbol="MSFT").first()
+        if microsoft_stock is None:
+            # Při vytváření nového záznamu zajistíme, že user_id dostane platnou hodnotu
+            default_user_id = 1  # Nahraďte skutečným ID uživatele
+            microsoft_stock = MicrosoftStock(symbol="MSFT", name="Microsoft Corporation", user_id=default_user_id)
+            db.session.add(microsoft_stock)
+            db.session.commit()
+
+        stock_data = microsoft_stock.get_stock_data()
+        return self.render_template(
+            "microsoft_graph.html", stock_data=stock_data, base_template="appbuilder/base.html"
+        )
+    
+class AmazonStockGraphView(BaseView):
+    default_view = "amazon_stock_graph"
+
+    @expose("/amazon_stock_graph/")
+    def amazon_stock_graph(self):
+        # Získáme nebo vytvoříme záznam pro akcie Amazonu
+        amazon_stock = db.session.query(AmazonStock).filter_by(symbol="AMZN").first()
+        if amazon_stock is None:
+            # Při vytváření nového záznamu zajistíme, že user_id dostane platnou hodnotu
+            default_user_id = 1  # Nahraďte skutečným ID uživatele
+            amazon_stock = AmazonStock(symbol="AMZN", name="Amazon.com Inc.", user_id=default_user_id)
+            db.session.add(amazon_stock)
+            db.session.commit()
+
+        stock_data = amazon_stock.get_stock_data()
+        return self.render_template(
+            "amazon_graph.html", stock_data=stock_data, base_template="appbuilder/base.html"
+        )
+    
+
 appbuilder.add_view(
     StockGraphView,
     "S&P 500 Graph",
@@ -261,6 +300,22 @@ appbuilder.add_view(
 appbuilder.add_view(
     TeslaStockGraphView,
     "Tesla Stock Graph",
+    icon="fa-line-chart",
+    category="Stocks",
+    category_icon="fa-money",
+)
+
+appbuilder.add_view(
+    MicrosoftStockGraphView,
+    "Microsoft Stock Graph",
+    icon="fa-line-chart",
+    category="Stocks",
+    category_icon="fa-money",
+)
+
+appbuilder.add_view(
+    AmazonStockGraphView,
+    "Amazon Stock Graph",
     icon="fa-line-chart",
     category="Stocks",
     category_icon="fa-money",

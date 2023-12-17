@@ -1,0 +1,29 @@
+{%- extends 'appbuilder/base.html' %}
+{%- block content %}
+  <h3>Amazon Stock Graph (EUR)</h3>
+  <div id="stockGraph"></div>
+
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script>
+    var stockData = {{ stock_data | tojson | safe }};
+    var trace = {
+      x: stockData.map(d => d.Date),
+      y: stockData.map(d => d.Close_EUR),
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Amazon (EUR)',
+    };
+
+    var layout = {
+      title: 'Amazon Stock Price (EUR)',
+      xaxis: {
+        title: 'Date',
+      },
+      yaxis: {
+        title: 'Close Price (EUR)',
+      },
+    };
+
+    Plotly.newPlot('stockGraph', [trace], layout);
+  </script>
+{%- endblock %}
