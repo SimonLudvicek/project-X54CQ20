@@ -12,7 +12,7 @@ class Stock(Model):
     name = Column(String(255), nullable=False)
     quantity = Column(Integer, default=0)  
     purchase_price = Column(Float, default=0.0)  
-    user_id = Column(Integer, nullable=False)  
+    user_id = Column(Integer, nullable=False, default = 1)  
     
     exchange_rate = 0.93 
 
