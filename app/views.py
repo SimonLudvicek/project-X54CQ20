@@ -10,16 +10,13 @@ from flask_appbuilder.views import ModelView
 
 from . import appbuilder, db
 from flask_appbuilder import BaseView, SimpleFormView, expose
-from .models import Country, CountryStats, PoliticalType, Portfolio
+from .models import Country, CountryStats, PoliticalType
 from flask import render_template, flash
 from .news import NewsModel, NewsForm
 from .stock import Stock, AppleStock, TeslaStock, MicrosoftStock, AmazonStock
-from .portfolio import StockModel, MyUser
+from .portfolio import PortfolioForm
 
 log = logging.getLogger(__name__)
-
-class PortfolioView(ModelView):
-    datamodel = SQLAInterface(Portfolio)
     
 
 class CountryStatsModelView(ModelView):
@@ -121,12 +118,7 @@ appbuilder.add_view(
     icon="fa-dashboard",
     category="Statistics",
 )
-appbuilder.add_view(
-    PortfolioView,
-    "Show Portfolio",
-    icon="fa-folder-open-o",
-    category="Statistics"
-)
+
 
 
 
@@ -168,27 +160,57 @@ appbuilder.add_view(
 )
 
 
+class PortfolioView(BaseView):
+    default_view = "portfolio_view"
 
-class StockModelView(ModelView):
-    datamodel = SQLAInterface(StockModel)
-    list_columns = ['symbol', 'name', 'quantity', 'purchase_price', 'user.username']
+    @expose("/portfolio_view/", methods=["GET", "POST"])
+    def portfolio_view(self):
+        form = PortfolioForm()
+        form.stock_type.choices = [
+            ('stock', 'Stock'),
+            ('apple_stock', 'Apple Stock'),
+            ('tesla_stock', 'Tesla Stock'),
+            ('microsoft_stock', 'Microsoft Stock'),
+            ('amazon_stock', 'Amazon Stock'),
+        ]
+        form.stock_id.choices = self.get_stock_choices(form.stock_type.data)
 
-class UserModelView(ModelView):
-    datamodel = SQLAInterface(MyUser)
-    related_views = [StockModelView]
+        if form.validate_on_submit():
+            stock_data = self.get_stock_data(form.stock_type.data, form.stock_id.data)
+            return dict(form=form, stock_data=stock_data)
 
-appbuilder.add_view(StockModelView, 
-                    "List Stocks", 
-                    icon="fa-table", 
-                    category="Portfolio",
-                    category_icon="fa-folder-open-o")
+        return dict(form=form, stock_data=None)
 
-appbuilder.add_view(UserModelView, 
-                    "List Users", 
-                    icon="fa-user", 
-                    category="Portfolio")
+    def get_stock_choices(self, stock_type):
+        stock_class = self.get_stock_class(stock_type)
+        stocks = db.session.query(stock_class).all()
+        return [(stock.id, stock.name) for stock in stocks]
 
+    def get_stock_data(self, stock_type, stock_id):
+        stock_class = self.get_stock_class(stock_type)
+        stock = db.session.query(stock_class).get(stock_id)
+        return stock.get_stock_data()
 
+    def get_stock_class(self, stock_type):
+        if stock_type == 'stock':
+            return Stock
+        elif stock_type == 'apple_stock':
+            return AppleStock
+        elif stock_type == 'tesla_stock':
+            return TeslaStock
+        elif stock_type == 'microsoft_stock':
+            return MicrosoftStock
+        elif stock_type == 'amazon_stock':
+            return AmazonStock
+
+appbuilder.add_view(
+    PortfolioView,
+    "Portfolio",
+    icon="fa-money",
+    label="Manage Portfolio",
+    category="Financial",
+    category_icon="fa-line-chart",
+)
 
 class StockGraphView(BaseView):
     default_view = "stock_graph"
@@ -228,11 +250,9 @@ class TeslaStockGraphView(BaseView):
 
     @expose("/tesla_stock_graph/")
     def tesla_stock_graph(self):
-        # Získáme nebo vytvoříme záznam pro akcie Tesly
         tesla_stock = db.session.query(TeslaStock).filter_by(symbol="TSLA").first()
         if tesla_stock is None:
-            # Při vytváření nového záznamu zajistíme, že user_id dostane platnou hodnotu
-            default_user_id = 1  # Nahraďte skutečným ID uživatele
+            default_user_id = 1  
             tesla_stock = TeslaStock(symbol="TSLA", name="Tesla Inc.", user_id=default_user_id)
             db.session.add(tesla_stock)
             db.session.commit()
@@ -247,11 +267,9 @@ class MicrosoftStockGraphView(BaseView):
 
     @expose("/microsoft_stock_graph/")
     def microsoft_stock_graph(self):
-        # Získáme nebo vytvoříme záznam pro akcie Microsoftu
         microsoft_stock = db.session.query(MicrosoftStock).filter_by(symbol="MSFT").first()
         if microsoft_stock is None:
-            # Při vytváření nového záznamu zajistíme, že user_id dostane platnou hodnotu
-            default_user_id = 1  # Nahraďte skutečným ID uživatele
+            default_user_id = 1  
             microsoft_stock = MicrosoftStock(symbol="MSFT", name="Microsoft Corporation", user_id=default_user_id)
             db.session.add(microsoft_stock)
             db.session.commit()
@@ -266,11 +284,9 @@ class AmazonStockGraphView(BaseView):
 
     @expose("/amazon_stock_graph/")
     def amazon_stock_graph(self):
-        # Získáme nebo vytvoříme záznam pro akcie Amazonu
         amazon_stock = db.session.query(AmazonStock).filter_by(symbol="AMZN").first()
         if amazon_stock is None:
-            # Při vytváření nového záznamu zajistíme, že user_id dostane platnou hodnotu
-            default_user_id = 1  # Nahraďte skutečným ID uživatele
+            default_user_id = 1  
             amazon_stock = AmazonStock(symbol="AMZN", name="Amazon.com Inc.", user_id=default_user_id)
             db.session.add(amazon_stock)
             db.session.commit()

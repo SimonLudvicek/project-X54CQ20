@@ -1,0 +1,30 @@
+{% extends 'appbuilder/base.html' %}
+
+{% block content %}
+  <h3>Portfolio Management</h3>
+  <form method="POST" action="{{ url_for('PortfolioView.portfolio_view') }}">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.stock_type.label }}
+      {{ form.stock_type(class="form-control") }}
+    </div>
+    <div class="form-group">
+      {{ form.stock_id.label }}
+      {{ form.stock_id(class="form-control") }}
+    </div>
+    <div class="form-group">
+      {{ form.quantity.label }}
+      {{ form.quantity(class="form-control") }}
+    </div>
+    <div class="form-group">
+      {{ form.purchase_price.label }}
+      {{ form.purchase_price(class="form-control") }}
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+  {% if stock_data %}
+    <!-- Display stock data here, you can customize this part based on your needs -->
+    <h4>Stock Data</h4>
+    <pre>{{ stock_data | tojson(indent=2) }}</pre>
+  {% endif %}
+{% endblock %}
