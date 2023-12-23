@@ -1,22 +1,21 @@
-{%- extends 'appbuilder/base.html' %}
-{%- block content %}
-  <h3>News List</h3>
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Title</th>
-        <th>Date</th>
-        <th>Text</th>
-      </tr>
-    </thead>
-    <tbody>
+{% extends 'appbuilder/base.html' %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h3 class="mb-4">News List</h3>
+    <div class="row">
       {% for news in news_list %}
-        <tr>
-          <td>{{ news.title }}</td>
-          <td>{{ news.date }}</td>
-          <td>{{ news.text }}</td>
-        </tr>
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-body">
+              <h3 class="card-title">{{ news.title }}</h3>
+              <p class="card-text"><strong>Date:</strong> {{ news.date.strftime('%Y-%m-%d') }}</p>
+              <p class="card-text">{{ news.text[:150] }}{% if news.text|length > 150 %}...{% endif %}</p>
+              <a href="{{ url_for('NewsView.news_detail', news_id=news.id) }}" class="btn btn-primary">Read More</a>
+            </div>
+          </div>
+        </div>
       {% endfor %}
-    </tbody>
-  </table>
-{%- endblock %}
+    </div>
+  </div>
+{% endblock %}

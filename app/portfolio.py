@@ -8,13 +8,13 @@ from wtforms.validators import DataRequired
 from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from sqlalchemy.orm import relationship
 from . import appbuilder, db
-from .stock import Stock, AppleStock, TeslaStock, MicrosoftStock, AmazonStock
+
 
 class MyUser(Model):
     id = Column(Integer, primary_key=True)
     username = Column(String(150), unique=True, nullable=False)
     stocks = relationship("Stock", primaryjoin="foreign(Stock.user_id) == MyUser.id")
-    
+
 class Portfolio(Model, AuditMixin):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('ab_user.id'))

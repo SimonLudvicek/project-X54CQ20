@@ -138,8 +138,27 @@ class NewsView(SimpleFormView):
     message = "Your news were submitted"
 
     def form_post(self, form):
-        # post process form
-        flash(self.message, "info")
+        if form.validate_on_submit():
+            news_entry = NewsModel(
+                title=form.title.data,
+                date=form.date.data,
+                text=form.text.data
+            )
+            db.session.add(news_entry)
+            db.session.commit()
+            flash(self.message, "info")
+        else:
+            flash("Formulář není platný.", "warning")
+    
+    @expose("/show/<int:news_id>/", methods=["GET"])
+    def news_detail(self, news_id):
+        news_entry = db.session.query(NewsModel).get(news_id)
+        if news_entry:
+            return self.render_template(
+                "news_detail.html", news_entry=news_entry, base_template="appbuilder/base.html"
+            )
+        else:
+            flash("Zpráva s ID {} nebyla nalezena.".format(news_id), "warning")
 
 appbuilder.add_view(
     NewsListView,

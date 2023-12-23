@@ -1,0 +1,18 @@
+{%- extends 'appbuilder/base.html' %}
+{%- block content %}
+  <div class="container mt-4">
+    <h3 class="mb-4">{{ news_entry.title }}</h3>
+
+    <div class="card">
+      <div class="card-body">
+        <dl class="row">
+          <dd class="col-sm-9" style="padding-bottom: 15px;">{{ news_entry.date }}</dd>
+
+          <dd class="col-sm-9">{{ news_entry.text }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <a href="{{ url_for('NewsListView.list_news') }}" class="btn btn-primary mt-3">Back to News List</a>
+  </div>
+{%- endblock %}
