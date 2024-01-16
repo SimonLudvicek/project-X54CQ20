@@ -1,0 +1,30 @@
+{% extends 'appbuilder/base.html' %}
+
+{% block content %}
+<div class="container">
+  <form method="post" action="{{ url_for('StockModelView.sell_stock', ids=request.args.get('ids')) }}" class="my-form">
+    {{ form.hidden_tag() }}
+    <fieldset>
+      <legend>Sell Stock</legend>
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="form-group">
+            {{ form.csrf_token }}
+            {{ form.hidden_tag() }}
+            <label for="{{ form.price.id }}">{{ form.price.label }}</label>
+            {{ form.price(size=50, class="form-control") }}
+          </div>
+          <div class="form-group">
+            <label for="{{ form.quantity.id }}">{{ form.quantity.label }}</label>
+            {{ form.quantity(size=50, class="form-control") }}
+          </div>
+        </div>
+      </div>
+    </fieldset>
+    <p>
+      <input type="submit" value="Sell" class="btn btn-primary">
+      <a href="{{ url_for('StockModelView.list') }}" class="btn btn-secondary">Back to Stocks</a>
+    </p>
+  </form>
+</div>
+{% endblock %}

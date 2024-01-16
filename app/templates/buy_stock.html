@@ -1,0 +1,16 @@
+{% extends 'appbuilder/base.html' %}
+
+{% block content %}
+  <h1>Buy Stock</h1>
+  <p>Stock Symbol: {{ apple_stock.symbol }}</p>
+  <p>Current Price: ${{ apple_stock.price }}</p>
+  <br>
+  <form method="post" action="{{ url_for('StockTradingView.buy_stock') }}">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.label('Quantity') }}
+      {{ form.quantity(size=2) }}
+    </div>
+    <button type="submit" class="btn btn-primary">Buy</button>
+  </form>
+{% endblock %}

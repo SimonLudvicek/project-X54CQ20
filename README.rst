@@ -1,18 +1,17 @@
-Base Skeleton to start your application using Flask-AppBuilder
+Finanční aplikace ve FAB
 --------------------------------------------------------------
 
-- Install it::
+- aplikaci jednoduše nainstalujete pomocí názorných příkazů
 
-	pip install flask-appbuilder
-	git clone https://github.com/dpgaspar/Flask-AppBuilder-Skeleton.git
+    git clone https://github.com/SimonLudvicek/project-X54CQ20
+    pip install -r requirements.txt
 
-- Run it::
+- spustíte jí jedoduchým příkazem:
 
-    $ export FLASK_APP=app
-    # Create an admin user
-    $ flask fab create-admin
-    # Run dev server
-    $ flask run
+    flask run
 
-
-That's it!!
+- Použité knihovny
+    Yfinance
+    plotly
+    pandas
+    

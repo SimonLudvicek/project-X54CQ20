@@ -1,18 +1,17 @@
 from flask_appbuilder import Model
-from sqlalchemy import Column, Integer, String, Float, Date
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Float
 from datetime import datetime
 import yfinance as yf
 import pandas as pd
 from . import db
 
-class Stock(Model):
+class SapStock(Model):
     id = Column(Integer, primary_key=True)
     symbol = Column(String(50), unique=True, nullable=False)
     name = Column(String(255), nullable=False)
     quantity = Column(Integer, default=0)  
     purchase_price = Column(Float, default=0.0)  
-    user_id = Column(Integer, nullable=False, default = 1)  
+    user_id = Column(Integer, nullable=False)  
     
     exchange_rate = 0.93 
 

@@ -1,126 +1,22 @@
-import calendar
 import logging
 
-from flask_appbuilder.charts.views import (
-    DirectByChartView, DirectChartView, GroupByChartView
-)
-from flask_appbuilder.models.group import aggregate_avg, aggregate_sum
+
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_appbuilder.views import ModelView
 
 from . import appbuilder, db
-from flask_appbuilder import BaseView, SimpleFormView, expose
-from .models import Country, CountryStats, PoliticalType
-from flask import render_template, flash
+from flask_appbuilder import ModelView, SimpleFormView, expose, BaseView
+from flask import flash, url_for, redirect, request
 from .news import NewsModel, NewsForm
-from .stock import Stock, AppleStock, TeslaStock, MicrosoftStock, AmazonStock
-from .portfolio import PortfolioForm
+from .stock import SapStock, AppleStock, TeslaStock, MicrosoftStock, AmazonStock
+from flask_appbuilder.actions import action
+from flask_login import current_user
+from .portfolio import Stock, StockForm, SellStockForm
+
 
 log = logging.getLogger(__name__)
-    
-
-class CountryStatsModelView(ModelView):
-    datamodel = SQLAInterface(CountryStats)
-    list_columns = ["country", "stat_date", "population", "unemployed", "college"]
-
-
-class CountryModelView(ModelView):
-    datamodel = SQLAInterface(Country)
-
-
-class PoliticalTypeModelView(ModelView):
-    datamodel = SQLAInterface(PoliticalType)
-
-
-class CountryStatsDirectChart(DirectChartView):
-    datamodel = SQLAInterface(CountryStats)
-    chart_title = "Statistics"
-    chart_type = "LineChart"
-    direct_columns = {
-        "General Stats": ("stat_date", "population", "unemployed", "college")
-    }
-    base_order = ("stat_date", "asc")
-
-
-def pretty_month_year(value):
-    return calendar.month_name[value.month] + " " + str(value.year)
-
-
-class CountryDirectChartView(DirectByChartView):
-    datamodel = SQLAInterface(CountryStats)
-    chart_title = "Direct Data"
-
-    definitions = [
-        {
-            "group": "stat_date",
-            "series": ["unemployed", "college"],
-        }
-    ]
-
-
-class CountryGroupByChartView(GroupByChartView):
-    datamodel = SQLAInterface(CountryStats)
-    chart_title = "Statistics"
-
-    definitions = [
-        {
-            "label": "Country Stat",
-            "group": "country",
-            "series": [
-                (aggregate_avg, "unemployed"),
-                (aggregate_avg, "population"),
-                (aggregate_avg, "college"),
-            ],
-        },
-        {
-            "group": "month_year",
-            "formatter": pretty_month_year,
-            "series": [
-                (aggregate_sum, "unemployed"),
-                (aggregate_avg, "population"),
-                (aggregate_avg, "college"),
-            ],
-        },
-    ]
-
-
-appbuilder.add_view(
-    CountryModelView, "List Countries", icon="fa-folder-open-o", category="Statistics"
-)
-appbuilder.add_view(
-    PoliticalTypeModelView,
-    "List Political Types",
-    icon="fa-folder-open-o",
-    category="Statistics",
-)
-appbuilder.add_view(
-    CountryStatsModelView,
-    "List Country Stats",
-    icon="fa-folder-open-o",
-    category="Statistics",
-)
-appbuilder.add_separator("Statistics")
-appbuilder.add_view(
-    CountryStatsDirectChart,
-    "Show Country Chart",
-    icon="fa-dashboard",
-    category="Statistics",
-)
-appbuilder.add_view(
-    CountryGroupByChartView,
-    "Group Country Chart",
-    icon="fa-dashboard",
-    category="Statistics",
-)
-appbuilder.add_view(
-    CountryDirectChartView,
-    "Show Country Chart",
-    icon="fa-dashboard",
-    category="Statistics",
-)
-
-
-
+ 
+#Novinky
 
 class NewsListView(BaseView):
     default_view = "list_news"
@@ -163,86 +59,114 @@ class NewsView(SimpleFormView):
 appbuilder.add_view(
     NewsListView,
     "List News",
-    icon="fa-cogs",
+    icon="fa-info-circle",
     label="News List",
     category="News",
-    category_icon="fa-group",
+    category_icon="fa-newspaper",
 )
 
 appbuilder.add_view(
     NewsView,
     "News View",
-    icon="fa-cogs",
+    icon="fa-bell",
     label=("Add News"),
     category="News",
-    category_icon="fa-group",
+    category_icon="fa-newspaper",
 )
 
+#Nákup a prodej akcií
 
-class PortfolioView(BaseView):
-    default_view = "portfolio_view"
+class StockModelView(ModelView):
+    datamodel = SQLAInterface(Stock)
+    list_columns = ['symbol', 'name', 'quantity', 'price']
+    show_columns = ['symbol', 'name', 'quantity', 'price']
 
-    @expose("/portfolio_view/", methods=["GET", "POST"])
-    def portfolio_view(self):
-        form = PortfolioForm()
-        form.stock_type.choices = [
-            ('stock', 'Stock'),
-            ('apple_stock', 'Apple Stock'),
-            ('tesla_stock', 'Tesla Stock'),
-            ('microsoft_stock', 'Microsoft Stock'),
-            ('amazon_stock', 'Amazon Stock'),
-        ]
-        form.stock_id.choices = self.get_stock_choices(form.stock_type.data)
+    @action("sell", "Sell", "Do you really want to sell this stock?")
+    def action_sell(self, items):
+        return redirect(url_for('.sell_stock', ids=','.join(str(item.id) for item in items)))
 
-        if form.validate_on_submit():
-            stock_data = self.get_stock_data(form.stock_type.data, form.stock_id.data)
-            return dict(form=form, stock_data=stock_data)
+    @expose('/sell_stock/', methods=['GET', 'POST'])
+    def sell_stock(self):
+        form = SellStockForm(request.form)
+        item_ids = request.args.get('ids').split(',')
+        items = [self.datamodel.get(int(item_id)) for item_id in item_ids]
 
-        return dict(form=form, stock_data=None)
+        if request.method == 'POST' and form.validate():
+            total_earnings = 0
 
-    def get_stock_choices(self, stock_type):
-        stock_class = self.get_stock_class(stock_type)
-        stocks = db.session.query(stock_class).all()
-        return [(stock.id, stock.name) for stock in stocks]
+            for item in items:
+                if item.quantity < form.quantity.data:
+                    flash('You do not have enough stocks to sell.', 'warning')
+                    return redirect(url_for('.sell_stock', ids=request.args.get('ids')))
 
-    def get_stock_data(self, stock_type, stock_id):
-        stock_class = self.get_stock_class(stock_type)
-        stock = db.session.query(stock_class).get(stock_id)
-        return stock.get_stock_data()
+                earnings = (form.price.data - item.price) * form.quantity.data
+                total_earnings += earnings
 
-    def get_stock_class(self, stock_type):
-        if stock_type == 'stock':
-            return Stock
-        elif stock_type == 'apple_stock':
-            return AppleStock
-        elif stock_type == 'tesla_stock':
-            return TeslaStock
-        elif stock_type == 'microsoft_stock':
-            return MicrosoftStock
-        elif stock_type == 'amazon_stock':
-            return AmazonStock
+                db.session.delete(item)
+
+            db.session.commit()
+            flash(f'Stock sold successfuly! Total Earnings/Loss: {total_earnings}', 'info')
+            return redirect(url_for('StockModelView.list'))
+
+        return self.render_template('sell_stock.html', form=form, items=items)
+
+class StockFormView(SimpleFormView):
+    form = StockForm
+    form_title = 'Buy Stock'
+    form_template = 'appbuilder/general/model/edit.html'
+    message = 'Stock bought successfully.'
+
+    def form_post(self, form):
+        existing_stock = db.session.query(Stock).filter_by(symbol=form.symbol.data, user_id=current_user.id).first()
+        if existing_stock:
+            existing_stock.quantity += form.quantity.data
+            existing_stock.price = form.price.data
+        else:
+            stock = Stock()
+            stock.symbol = form.symbol.data
+            stock.name = form.name.data
+            stock.quantity = form.quantity.data
+            stock.price = form.price.data
+
+            stock.user = current_user
+
+            db.session.add(stock)
+
+        db.session.commit()
+        flash(self.message, 'info')
+
+        return redirect(url_for('StockModelView.list'))
 
 appbuilder.add_view(
-    PortfolioView,
-    "Portfolio",
-    icon="fa-money",
-    label="Manage Portfolio",
-    category="Financial",
-    category_icon="fa-line-chart",
+    StockModelView,
+    "My Stocks",
+    icon="fa-wallet",
+    category="Portfolio",
+    category_icon="fa-bank"
 )
 
-class StockGraphView(BaseView):
-    default_view = "stock_graph"
+appbuilder.add_view(
+    StockFormView,
+    "Buy Stock",
+    icon="fa-dollar-sign",
+    category="Portfolio",
+)
 
-    @expose("/stock_graph/")
-    def stock_graph(self):
-        stock = db.session.query(Stock).filter_by(symbol="^GSPC").first()
-        if stock is None:
-            stock = Stock(symbol="^GSPC", name="S&P 500")
-            db.session.add(stock)
+#Zobrazování grafů
+
+class StockGraphView(BaseView):
+    default_view = "sap_stock_graph"
+
+    @expose("/sap_stock_graph/")
+    def sap_stock_graph(self):
+        sap_stock = db.session.query(SapStock).filter_by(symbol="^GSPC").first()
+        if sap_stock is None:
+            default_user_id = 1 
+            sap_stock = SapStock(symbol="^GSPC", name="S&P 500", user_id=default_user_id)
+            db.session.add(sap_stock)
             db.session.commit()
 
-        stock_data = stock.get_stock_data()
+        stock_data = sap_stock.get_stock_data()
         return self.render_template(
             "sap_graph.html", stock_data=stock_data, base_template="appbuilder/base.html"
         )
